@@ -15,7 +15,7 @@ type Repository interface {
 	GetApplicationByID(ctx context.Context, id string) (*model.Application, error)
 	DeleteApplicationsNotInIDs(ctx context.Context, ids []string, deletedAtNano int64) error
 	GetAllApplications(ctx context.Context, filters ApplicationFilters) ([]*model.Application, error)
-	GetAppsPerPartitionPerQueue(ctx context.Context, partition, queue string, filters ApplicationFilters) ([]*model.Application, error)
+	GetAppsPerPartitionPerQueue(ctx context.Context, partitionID, queueID string, filters ApplicationFilters) ([]*model.Application, error)
 	UpdateHistory(
 		ctx context.Context,
 		apps []*dao.ApplicationHistoryDAOInfo,
