@@ -456,12 +456,12 @@ helm-uninstall-yunikorn: ## uninstall yunikorn using helm.
 
 .PHONY: helm-install-postgres
 helm-install-postgres: ## install postgres using helm.
-	$(HELM) upgrade --install postgresql bitnami/postgresql --values hack/postgres.values.yaml \
+	$(HELM) upgrade --install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql --values hack/postgres.values.yaml \
 		--namespace $(NAMESPACE) --create-namespace
 
 .PHONY: helm-uninstall-postgres
 helm-uninstall-postgres: ## uninstall postgres using helm.
-	$(HELM) uninstall postgres --namespace $(NAMESPACE)
+	$(HELM) uninstall postgresql --namespace $(NAMESPACE)
 
 .PHONY: helm-install-uhs-local
 helm-install-uhs-local: kind-load-image ## build & install unicorn-history-server using helm.
@@ -480,7 +480,6 @@ helm-uninstall-uhs-local:
 helm-repos: helm
 	$(HELM) repo add gresearch https://g-research.github.io/charts
 	$(HELM) repo add yunikorn https://apache.github.io/yunikorn-release
-	$(HELM) repo add bitnami https://charts.bitnami.com/bitnami
 	$(HELM) repo update
 
 ##@ Utils
