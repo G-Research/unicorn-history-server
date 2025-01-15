@@ -309,6 +309,7 @@ test-k6-performance: ## run k6 performance tests.
 
 .PHONY: web-build
 web-build: ng ## build the web components.
+## YHS Web
 	pnpm --prefix ./web install
 	pnpm --prefix ./web update yunikorn-web ## ensure that the yunikorn-web package is up to date
 	uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) \
@@ -316,13 +317,15 @@ web-build: ng ## build the web components.
 	localUhsComponentsWebAddress=$(strip $(call uhs_api_url)) \
 	pnpm --prefix ./web setenv
 	pnpm --prefix ./web build
+	echo "UHS Web Build Complete"
+## Yunikorn Web
 	echo "Removing node modules from yunikorn-web"
 	rm -rf ./web/node_modules/yunikorn-web/node_modules
 	echo "Copying yunikorn-web"
 	cp -r ./web/node_modules/yunikorn-web ./tmp
 	echo "Installing yunikorn-web"
 	pnpm --prefix ./tmp install
-	echo "Setting environment variables"
+	echo "Setting environment variables in yunikorn-web"
 	localSchedulerWebAddress=$(strip $(call yunikorn_api_url)) \
 	uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) \
 	moduleFederationRemoteEntry=$(strip $(call uhs_api_url))/remoteEntry.js \
@@ -330,15 +333,19 @@ web-build: ng ## build the web components.
 	pnpm --prefix ./tmp setenv:prod
 	echo "Building yunikorn-web"
 	pnpm --prefix ./tmp build:prod
+## Merging Assets
 	echo "Moving envconfig.json"
 	mv assets/assets/config/envconfig.json assets/assets/config/envconfig-uhs.json
-	## copy and merge yunikorn-web assets into the UHS assets directory
+	echo "Copy and Merge yunikorn-web assets into the UHS assets directory"
 	rsync -av ./tmp/dist/yunikorn-web/ assets
+	echo "Cleaning up yunikorn-web build"
 	rm -rf ./tmp
+	echo "Moving envconfig.json"
 	mv assets/assets/config/envconfig.json assets/assets/config/envconfig-yk.json
 	## merge the two envconfig files
 	cd assets/assets/config && jq -s '.[0] * .[1]' envconfig-yk.json envconfig-uhs.json > envconfig.json
-	echo "Done"
+	echo "Web build completed"
+
 .PHONY: build
 build: bin/app ## build the unicorn-history-server binary for current OS and architecture.
 	echo "Building unicorn-history-server binary for $(OS)/$(ARCH)"
@@ -385,7 +392,7 @@ endif
 
 .PHONY: docker-build
 docker-build: OS=linux
-docker-build: bin/docker clean build ## build docker image using buildx.
+docker-build: bin/docker clean build web-build ## build docker image using buildx.
 	echo "Building docker image for linux/$(ARCH)"
 	docker buildx build    				     			 \
 		--file build/unicorn-history-server/Dockerfile   \
