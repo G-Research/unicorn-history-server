@@ -2,8 +2,11 @@ package migrations
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/G-Research/unicorn-history-server/internal/log"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -14,24 +17,26 @@ import (
 
 type GoMigrateIntTest struct {
 	suite.Suite
-	tp *database.TestPostgresContainer
+	tp   *database.TestPostgresContainer
+	pool *pgxpool.Pool
+	cfg  *database.InstanceConfig
 }
 
 func (ts *GoMigrateIntTest) SetupSuite() {
 	ctx := context.Background()
-	cfg := config.GetTestPostgresConfig()
-	// define test container config
-	tcCfg := database.InstanceConfig{
-		User:     cfg.Username,
-		Password: cfg.Password,
-		DBName:   cfg.DbName,
-		Host:     cfg.Host,
-		Port:     cfg.Port,
+	cfg := database.InstanceConfig{
+		User:     "test",
+		Password: "test",
+		DBName:   "template",
+		Host:     "localhost",
+		Port:     15439,
 	}
 
-	tp, err := database.NewTestPostgresContainer(ctx, tcCfg)
+	tp, err := database.NewTestPostgresContainer(ctx, cfg)
 	require.NoError(ts.T(), err)
 	ts.tp = tp
+	ts.pool = tp.Pool(ctx, ts.T(), &cfg)
+	ts.cfg = &cfg
 }
 
 func (ts *GoMigrateIntTest) TearDownSuite() {
@@ -41,14 +46,23 @@ func (ts *GoMigrateIntTest) TearDownSuite() {
 
 func (ts *GoMigrateIntTest) TestGoMigrate() {
 	ctx := context.Background()
-
-	schema := database.CreateTestSchema(ctx, ts.T())
-	ts.T().Cleanup(func() {
-		database.DropTestSchema(ctx, ts.T(), schema)
-	})
+	log.Init(config.GetTestLogConfig())
 
 	cfg := config.GetTestPostgresConfig()
-	cfg.Schema = schema
+	cfg.Host = ts.cfg.Host
+	cfg.Port = ts.cfg.Port
+	cfg.Username = ts.cfg.User
+	cfg.Password = ts.cfg.Password
+	cfg.DbName = ts.cfg.DBName
+	cfg.Schema = "test"
+
+	_, err := ts.pool.Exec(ctx, fmt.Sprintf("CREATE SCHEMA %s", cfg.Schema))
+	require.NoError(ts.T(), err)
+
+	setSearchPathQuery := fmt.Sprintf("SET search_path TO %s", cfg.Schema)
+	_, err = ts.pool.Exec(ctx, setSearchPathQuery)
+	require.NoError(ts.T(), err)
+
 	m, err := New(cfg, "../../../migrations")
 	require.NoError(ts.T(), err)
 
