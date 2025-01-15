@@ -101,6 +101,16 @@ MINIKUBE_VERSION ?= latest
 # used in integration and performance tests.
 YK_VERSION=18a3c7f
 
+# Add these near the top with other tool versions
+NODE_VERSION ?= 22.13.0
+PNPM_VERSION ?= latest
+
+# Add these with other LOCALBIN definitions
+NODE_DIR ?= $(LOCALBIN_TOOLING)/node
+PNPM ?= $(NODE_DIR)/lib/node_modules/corepack/shims/pnpm
+
+NODE_PATH := PATH=$(NODE_DIR)/bin:$(dir $(PNPM)):$$PATH
+
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
@@ -310,13 +320,13 @@ test-k6-performance: ## run k6 performance tests.
 .PHONY: web-build
 web-build: ng ## build the web components.
 ## YHS Web
-	pnpm --prefix ./web install
-	pnpm --prefix ./web update yunikorn-web ## ensure that the yunikorn-web package is up to date
+	$(PNPM) --prefix ./web install
+	$(PNPM) --prefix ./web update yunikorn-web ## ensure that the yunikorn-web package is up to date
 	uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) \
 	moduleFederationRemoteEntry=$(strip $(call uhs_api_url))/remoteEntry.js \
 	localUhsComponentsWebAddress=$(strip $(call uhs_api_url)) \
-	pnpm --prefix ./web setenv
-	pnpm --prefix ./web build
+	$(PNPM) --prefix ./web setenv
+	$(PNPM) --prefix ./web build
 	echo "UHS Web Build Complete"
 ## Yunikorn Web
 	echo "Removing node modules from yunikorn-web"
@@ -324,15 +334,15 @@ web-build: ng ## build the web components.
 	echo "Copying yunikorn-web"
 	cp -r ./web/node_modules/yunikorn-web ./tmp
 	echo "Installing yunikorn-web"
-	pnpm --prefix ./tmp install
+	$(PNPM) --prefix ./tmp install
 	echo "Setting environment variables in yunikorn-web"
 	localSchedulerWebAddress=$(strip $(call yunikorn_api_url)) \
 	uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) \
 	moduleFederationRemoteEntry=$(strip $(call uhs_api_url))/remoteEntry.js \
 	localUhsComponentsWebAddress=$(strip $(call uhs_api_url)) \
-	pnpm --prefix ./tmp setenv:prod
+	$(PNPM) --prefix ./tmp setenv:prod
 	echo "Building yunikorn-web"
-	pnpm --prefix ./tmp build:prod
+	$(PNPM) --prefix ./tmp build:prod
 ## Merging Assets
 	echo "Moving envconfig.json"
 	mv assets/assets/config/envconfig.json assets/assets/config/envconfig-uhs.json
@@ -517,7 +527,7 @@ patch-yunikorn-service: ## patch yunikorn service to expose it as NodePort (yuni
 ##@ Build Dependencies
 
 .PHONY: install-tools
-install-tools: golangci-lint gotestsum $(CLUSTER_MGR) helm yq ## install development tools.
+install-tools: golangci-lint gotestsum $(CLUSTER_MGR) helm yq node ## install development tools.
 
 GOTESTSUM ?= $(LOCALBIN_TOOLING)/gotestsum
 GOTESTSUM_VERSION ?= v1.11.0
@@ -604,3 +614,19 @@ $(K6): bin/tooling
 .PHONY: ng
 ng: ## install Angular CLI.
 	npm install -g @angular/cli@18
+
+.PHONY: node
+node: $(NODE_DIR) ## download and setup node locally if necessary.
+$(NODE_DIR): bin/tooling
+	if [ ! -d $(NODE_DIR) ]; then \
+		mkdir -p $(NODE_DIR) ; \
+	fi ; \
+	if [ "$(ARCH)" = "amd64" ]; then \
+		NODE_ARCH="x64" ; \
+	else \
+		NODE_ARCH="$(ARCH)" ; \
+	fi ; \
+	curl -fsSL https://nodejs.org/dist/v$(subst x,,$(NODE_VERSION))/node-v$(subst x,,$(NODE_VERSION))-$(OS)-$$NODE_ARCH.tar.gz | tar -xz --strip-components=1 -C $(NODE_DIR) ; \
+	$(NODE_DIR)/bin/corepack enable && \
+	$(NODE_DIR)/bin/corepack prepare pnpm@$(PNPM_VERSION) --activate
+
