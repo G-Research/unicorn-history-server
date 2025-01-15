@@ -21,4 +21,5 @@ export const environment = {
   externalLogsURL: '',
   yunikornApiURL: '',
   uhsApiURL: '',
+  localUhsComponentsWebAddress: '',
 };

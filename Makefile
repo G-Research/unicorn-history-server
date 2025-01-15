@@ -311,15 +311,34 @@ test-k6-performance: ## run k6 performance tests.
 web-build: ng ## build the web components.
 	pnpm --prefix ./web install
 	pnpm --prefix ./web update yunikorn-web ## ensure that the yunikorn-web package is up to date
-	uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) pnpm --prefix ./web setenv
+	uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) \
+	moduleFederationRemoteEntry=$(strip $(call uhs_api_url))/remoteEntry.js \
+	localUhsComponentsWebAddress=$(strip $(call uhs_api_url)) \
+	pnpm --prefix ./web setenv
 	pnpm --prefix ./web build
+	echo "Removing node modules from yunikorn-web"
+	rm -rf ./web/node_modules/yunikorn-web/node_modules
+	echo "Copying yunikorn-web"
+	cp -r ./web/node_modules/yunikorn-web ./tmp
+	echo "Installing yunikorn-web"
+	pnpm --prefix ./tmp install
+	echo "Setting environment variables"
+	localSchedulerWebAddress=$(strip $(call yunikorn_api_url)) \
+	uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) \
+	moduleFederationRemoteEntry=$(strip $(call uhs_api_url))/remoteEntry.js \
+	localUhsComponentsWebAddress=$(strip $(call uhs_api_url)) \
+	pnpm --prefix ./tmp setenv:prod
+	echo "Building yunikorn-web"
+	pnpm --prefix ./tmp build:prod
+	echo "Moving envconfig.json"
 	mv assets/assets/config/envconfig.json assets/assets/config/envconfig-uhs.json
 	## copy and merge yunikorn-web assets into the UHS assets directory
-	rsync -av web/node_modules/yunikorn-web/dist/yunikorn-web/ assets
+	rsync -av ./tmp/dist/yunikorn-web/ assets
+	rm -rf ./tmp
 	mv assets/assets/config/envconfig.json assets/assets/config/envconfig-yk.json
 	## merge the two envconfig files
 	cd assets/assets/config && jq -s '.[0] * .[1]' envconfig-yk.json envconfig-uhs.json > envconfig.json
-
+	echo "Done"
 .PHONY: build
 build: bin/app ## build the unicorn-history-server binary for current OS and architecture.
 	echo "Building unicorn-history-server binary for $(OS)/$(ARCH)"
