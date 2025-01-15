@@ -19,15 +19,17 @@ type GoMigrateIntTest struct {
 
 func (ts *GoMigrateIntTest) SetupSuite() {
 	ctx := context.Background()
-	cfg := database.InstanceConfig{
-		User:     "test",
-		Password: "test",
-		DBName:   "template",
-		Host:     "localhost",
-		Port:     15439,
+	cfg := config.GetTestPostgresConfig()
+	// define test container config
+	tcCfg := database.InstanceConfig{
+		User:     cfg.Username,
+		Password: cfg.Password,
+		DBName:   cfg.DbName,
+		Host:     cfg.Host,
+		Port:     cfg.Port,
 	}
 
-	tp, err := database.NewTestPostgresContainer(ctx, cfg)
+	tp, err := database.NewTestPostgresContainer(ctx, tcCfg)
 	require.NoError(ts.T(), err)
 	ts.tp = tp
 }
