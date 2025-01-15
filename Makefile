@@ -318,31 +318,31 @@ test-k6-performance: ## run k6 performance tests.
 ##@ Build
 
 .PHONY: web-build
-web-build: ng ## build the web components.
+web-build: node ## build the web components.
 ## YHS Web
-	$(PNPM) --prefix ./web install
-	$(PNPM) --prefix ./web update yunikorn-web ## ensure that the yunikorn-web package is up to date
-	uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) \
+	$(NODE_PATH) $(PNPM) --prefix ./web install
+	$(NODE_PATH) $(PNPM) --prefix ./web update yunikorn-web ## ensure that the yunikorn-web package is up to date
+	$(NODE_PATH) uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) \
 	moduleFederationRemoteEntry=$(strip $(call uhs_api_url))/remoteEntry.js \
 	localUhsComponentsWebAddress=$(strip $(call uhs_api_url)) \
-	$(PNPM) --prefix ./web setenv
-	$(PNPM) --prefix ./web build
+	$(NODE_PATH) $(PNPM) --prefix ./web setenv
+	$(NODE_PATH) $(PNPM) --prefix ./web build
 	echo "UHS Web Build Complete"
 ## Yunikorn Web
 	echo "Removing node modules from yunikorn-web"
 	rm -rf ./web/node_modules/yunikorn-web/node_modules
 	echo "Copying yunikorn-web"
-	cp -r ./web/node_modules/yunikorn-web ./tmp
+	rsync -av --copy-links ./web/node_modules/yunikorn-web/ ./tmp/
 	echo "Installing yunikorn-web"
-	$(PNPM) --prefix ./tmp install
+	$(NODE_PATH) $(PNPM) --prefix ./tmp install
 	echo "Setting environment variables in yunikorn-web"
 	localSchedulerWebAddress=$(strip $(call yunikorn_api_url)) \
 	uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) \
 	moduleFederationRemoteEntry=$(strip $(call uhs_api_url))/remoteEntry.js \
 	localUhsComponentsWebAddress=$(strip $(call uhs_api_url)) \
-	$(PNPM) --prefix ./tmp setenv:prod
+	$(NODE_PATH) $(PNPM) --prefix ./tmp setenv:prod
 	echo "Building yunikorn-web"
-	$(PNPM) --prefix ./tmp build:prod
+	$(NODE_PATH) $(PNPM) --prefix ./tmp build:prod
 ## Merging Assets
 	echo "Moving envconfig.json"
 	mv assets/assets/config/envconfig.json assets/assets/config/envconfig-uhs.json
@@ -611,22 +611,15 @@ k6: xk6 $(K6) ## download k6 locally if necessary.
 $(K6): bin/tooling
 	test -s $(K6) || $(XK6) build $(K6_VERSION) --with github.com/grafana/xk6-kubernetes --output $(K6)
 
-.PHONY: ng
-ng: ## install Angular CLI.
-	npm install -g @angular/cli@18
-
 .PHONY: node
 node: $(NODE_DIR) ## download and setup node locally if necessary.
 $(NODE_DIR): bin/tooling
 	if [ ! -d $(NODE_DIR) ]; then \
 		mkdir -p $(NODE_DIR) ; \
 	fi ; \
-	if [ "$(ARCH)" = "amd64" ]; then \
-		NODE_ARCH="x64" ; \
-	else \
-		NODE_ARCH="$(ARCH)" ; \
-	fi ; \
-	curl -fsSL https://nodejs.org/dist/v$(subst x,,$(NODE_VERSION))/node-v$(subst x,,$(NODE_VERSION))-$(OS)-$$NODE_ARCH.tar.gz | tar -xz --strip-components=1 -C $(NODE_DIR) ; \
-	$(NODE_DIR)/bin/corepack enable && \
-	$(NODE_DIR)/bin/corepack prepare pnpm@$(PNPM_VERSION) --activate
+	NODE_ARCH="$$(if [ "$$(uname -m)" = "x86_64" ]; then echo "x64"; elif [ "$$(uname -m)" = "aarch64" ]; then echo "arm64"; else echo "$$(uname -m)"; fi)" ; \
+	echo "Downloading node $(NODE_VERSION) for $(OS)-$${NODE_ARCH}: https://nodejs.org/dist/v$(subst x,,$(NODE_VERSION))/node-v$(subst x,,$(NODE_VERSION))-$(OS)-$${NODE_ARCH}.tar.gz" ; \
+	curl -fsSL https://nodejs.org/dist/v$(subst x,,$(NODE_VERSION))/node-v$(subst x,,$(NODE_VERSION))-$(OS)-$${NODE_ARCH}.tar.gz | tar -xz --strip-components=1 -C $(NODE_DIR) ; \
+	PATH=$(NODE_DIR)/bin:$$PATH $(NODE_DIR)/bin/corepack enable && \
+	PATH=$(NODE_DIR)/bin:$$PATH $(NODE_DIR)/bin/corepack prepare pnpm@$(PNPM_VERSION) --activate
 
