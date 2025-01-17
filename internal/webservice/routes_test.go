@@ -593,3 +593,60 @@ func TestGetCluster(t *testing.T) {
 		})
 	}
 }
+
+func TestSchedulerHealthcheck(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockClient := yunikorn.NewMockClient(ctrl)
+
+	tests := []struct {
+		name           string
+		expected       *dao.SchedulerHealthDAOInfo
+		expectedStatus int
+	}{
+		{
+			name: "SchedulerHealthDAOInfo exists",
+			expected: &dao.SchedulerHealthDAOInfo{
+				Healthy: true,
+				HealthChecks: []dao.HealthCheckInfo{
+					{
+						Name:             "Scheduling errors",
+						Succeeded:        true,
+						Description:      "Check for scheduling error entries in metrics",
+						DiagnosisMessage: "There were 0 scheduling errors logged in the metrics",
+					},
+					{
+						Name:             "Failed nodes",
+						Succeeded:        true,
+						Description:      "Check for failed nodes entries in metrics",
+						DiagnosisMessage: "There were 0 failed nodes logged in the metrics",
+					},
+				},
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "No SchedulerHealthDAOInfo found",
+			expected:       nil,
+			expectedStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient.EXPECT().
+				Healthcheck(gomock.Any()).
+				Return(tt.expected, nil)
+
+			ws := &WebService{client: mockClient}
+
+			req, err := http.NewRequest(http.MethodGet, "/api/v1/scheduler/healthcheck", nil)
+			require.NoError(t, err)
+
+			rr := httptest.NewRecorder()
+
+			ws.schedulerHealthcheck(restful.NewRequest(req), restful.NewResponse(rr))
+			require.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}

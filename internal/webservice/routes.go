@@ -182,12 +182,12 @@ func (ws *WebService) init(ctx context.Context) {
 	)
 	service.Route(
 		service.GET(routeSchedulerHealthcheck).
-			To(ws.LivenessHealthcheck).
+			To(ws.schedulerHealthcheck).
 			Produces(restful.MIME_JSON).
-			Writes(health.LivenessStatus{}).
-			Returns(200, "OK", health.LivenessStatus{}).
+			Writes(dao.SchedulerHealthDAOInfo{}).
+			Returns(200, "OK", dao.SchedulerHealthDAOInfo{}).
 			Returns(500, "Internal Server Error", ProblemDetails{}).
-			Doc("Scheduler liveness healthcheck"),
+			Doc("Scheduler healthcheck"),
 	)
 	service.Route(
 		service.GET(routeHealthLiveness).
@@ -396,6 +396,7 @@ func (ws *WebService) getNodesPerPartition(req *restful.Request, resp *restful.R
 }
 
 func (ws *WebService) getClusters(req *restful.Request, resp *restful.Response) {
+	// mirror of yunikorn-core ws/v1/clusters
 	ctx := req.Request.Context()
 	clusters, err := ws.client.GetClusters(ctx)
 	if err != nil {
@@ -456,6 +457,21 @@ func (ws *WebService) getEventStatistics(req *restful.Request, resp *restful.Res
 		return
 	}
 	jsonResponse(resp, counts)
+}
+
+func (ws *WebService) schedulerHealthcheck(req *restful.Request, resp *restful.Response) {
+	// mirror of yunikorn-core ws/v1/scheduler/healthcheck
+	ctx := req.Request.Context()
+	healthCheck, err := ws.client.Healthcheck(ctx)
+	if err != nil {
+		errorResponse(req, resp, err)
+		return
+	}
+	if healthCheck == nil {
+		notFoundResponse(req, resp, fmt.Errorf("no healthcheck data found"))
+		return
+	}
+	jsonResponse(resp, healthCheck)
 }
 
 func (ws *WebService) LivenessHealthcheck(req *restful.Request, resp *restful.Response) {
