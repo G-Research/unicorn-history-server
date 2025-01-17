@@ -32,6 +32,7 @@ const (
 	routeAppsHistory              = "/api/v1/history/apps"
 	routeContainersHistory        = "/api/v1/history/containers"
 	routeNodesPerPartition        = "/api/v1/partition/{partition_id}/nodes"
+	routeNodeUtilizations         = "/api/v1/scheduler/node-utilizations"
 	routeSchedulerHealthcheck     = "/api/v1/scheduler/healthcheck"
 	routeEventStatistics          = "/api/v1/event-statistics"
 	routeHealthLiveness           = "/api/v1/health/liveness"
@@ -179,6 +180,15 @@ func (ws *WebService) init(ctx context.Context) {
 			Returns(200, "OK", ykmodel.EventTypeCounts{}).
 			Returns(500, "Internal Server Error", ProblemDetails{}).
 			Doc("Get event statistics"),
+	)
+	service.Route(
+		service.GET(routeNodeUtilizations).
+			To(ws.getNodeUtilizations).
+			Produces(restful.MIME_JSON).
+			Writes([]*dao.PartitionNodesUtilDAOInfo{}).
+			Returns(200, "OK", []*dao.PartitionNodesUtilDAOInfo{}).
+			Returns(500, "Internal Server Error", ProblemDetails{}).
+			Doc("Get node utilization information"),
 	)
 	service.Route(
 		service.GET(routeSchedulerHealthcheck).
@@ -457,6 +467,21 @@ func (ws *WebService) getEventStatistics(req *restful.Request, resp *restful.Res
 		return
 	}
 	jsonResponse(resp, counts)
+}
+
+func (ws *WebService) getNodeUtilizations(req *restful.Request, resp *restful.Response) {
+	// mirror of yunikorn-core ws/v1/scheduler/node-utilizations
+	ctx := req.Request.Context()
+	nu, err := ws.client.NodeUtilizations(ctx)
+	if err != nil {
+		errorResponse(req, resp, err)
+		return
+	}
+	if nu == nil {
+		notFoundResponse(req, resp, fmt.Errorf("no node utilizations data found"))
+		return
+	}
+	jsonResponse(resp, nu)
 }
 
 func (ws *WebService) schedulerHealthcheck(req *restful.Request, resp *restful.Response) {

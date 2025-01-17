@@ -221,3 +221,18 @@ func (mr *MockClientMockRecorder) Healthcheck(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Healthcheck", reflect.TypeOf((*MockClient)(nil).Healthcheck), arg0)
 }
+
+// NodeUtilizations mocks base method.
+func (m *MockClient) NodeUtilizations(arg0 context.Context) ([]*dao.PartitionNodesUtilDAOInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NodeUtilizations", arg0)
+	ret0, _ := ret[0].([]*dao.PartitionNodesUtilDAOInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NodeUtilizations indicates an expected call of NodeUtilizations.
+func (mr *MockClientMockRecorder) NodeUtilizations(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeUtilizations", reflect.TypeOf((*MockClient)(nil).NodeUtilizations), arg0)
+}

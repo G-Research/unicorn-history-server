@@ -22,6 +22,7 @@ const (
 	endpointContainersHistory = "/ws/v1/history/containers"
 	endpointFullStateDump     = "/ws/v1/fullstatedump"
 	endpointHealthcheck       = "/ws/v1/scheduler/healthcheck"
+	endpointNodeUtilizations  = "/ws/v1/scheduler/node-utilizations"
 	endpointClusters          = "/ws/v1/clusters"
 )
 
@@ -276,6 +277,25 @@ func (c *RESTClient) Healthcheck(ctx context.Context) (*dao.SchedulerHealthDAOIn
 	}
 
 	return &schedulerHealth, nil
+}
+
+func (c *RESTClient) NodeUtilizations(ctx context.Context) ([]*dao.PartitionNodesUtilDAOInfo, error) {
+	resp, err := c.get(ctx, endpointNodeUtilizations)
+	if err != nil {
+		return nil, err
+	}
+	defer closeBody(ctx, resp)
+
+	if resp.StatusCode != 200 {
+		return nil, handleNonOKResponse(ctx, resp)
+	}
+
+	var nodeUtilizations []*dao.PartitionNodesUtilDAOInfo
+	if err = unmarshallBody(ctx, resp, &nodeUtilizations); err != nil {
+		return nil, err
+	}
+
+	return nodeUtilizations, nil
 }
 
 func (c *RESTClient) GetEventStream(ctx context.Context) (*http.Response, error) {
