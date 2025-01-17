@@ -87,6 +87,21 @@ func (mr *MockClientMockRecorder) GetAppsHistory(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAppsHistory", reflect.TypeOf((*MockClient)(nil).GetAppsHistory), arg0)
 }
 
+// GetClusters mocks base method.
+func (m *MockClient) GetClusters(arg0 context.Context) ([]*dao.ClusterDAOInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClusters", arg0)
+	ret0, _ := ret[0].([]*dao.ClusterDAOInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetClusters indicates an expected call of GetClusters.
+func (mr *MockClientMockRecorder) GetClusters(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusters", reflect.TypeOf((*MockClient)(nil).GetClusters), arg0)
+}
+
 // GetContainersHistory mocks base method.
 func (m *MockClient) GetContainersHistory(arg0 context.Context) ([]*dao.ContainerHistoryDAOInfo, error) {
 	m.ctrl.T.Helper()

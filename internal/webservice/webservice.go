@@ -10,6 +10,7 @@ import (
 	"github.com/G-Research/unicorn-history-server/internal/database/repository"
 	"github.com/G-Research/unicorn-history-server/internal/health"
 	"github.com/G-Research/unicorn-history-server/internal/log"
+	"github.com/G-Research/unicorn-history-server/internal/yunikorn"
 )
 
 type WebService struct {
@@ -18,6 +19,7 @@ type WebService struct {
 	eventRepository repository.EventRepository
 	healthService   health.Interface
 	config          config.UHSConfig
+	client          yunikorn.Client
 }
 
 func NewWebService(
@@ -25,6 +27,7 @@ func NewWebService(
 	repository repository.Repository,
 	eventRepository repository.EventRepository,
 	healthService health.Interface,
+	client yunikorn.Client,
 ) *WebService {
 	return &WebService{
 		server: &http.Server{
@@ -35,6 +38,7 @@ func NewWebService(
 		eventRepository: eventRepository,
 		healthService:   healthService,
 		config:          cfg,
+		client:          client,
 	}
 }
 

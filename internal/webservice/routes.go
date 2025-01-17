@@ -42,7 +42,15 @@ var startupTime = time.Now()
 
 func (ws *WebService) init(ctx context.Context) {
 	service := new(restful.WebService)
-
+	service.Route(
+		service.GET(routeClusters).
+			To(ws.getClusters).
+			Produces(restful.MIME_JSON).
+			Writes([]*dao.ClusterDAOInfo{}).
+			Returns(200, "OK", []*dao.ClusterDAOInfo{}).
+			Returns(500, "Internal Server Error", ProblemDetails{}).
+			Doc("Get cluster information"),
+	)
 	service.Route(
 		service.GET(routePartitions).
 			To(ws.getPartitions).
@@ -385,6 +393,20 @@ func (ws *WebService) getNodesPerPartition(req *restful.Request, resp *restful.R
 		return
 	}
 	jsonResponse(resp, nodes)
+}
+
+func (ws *WebService) getClusters(req *restful.Request, resp *restful.Response) {
+	ctx := req.Request.Context()
+	clusters, err := ws.client.GetClusters(ctx)
+	if err != nil {
+		errorResponse(req, resp, err)
+		return
+	}
+	if clusters == nil {
+		notFoundResponse(req, resp, fmt.Errorf("no cluster found"))
+		return
+	}
+	jsonResponse(resp, clusters)
 }
 
 func (ws *WebService) getAppsHistory(req *restful.Request, resp *restful.Response) {

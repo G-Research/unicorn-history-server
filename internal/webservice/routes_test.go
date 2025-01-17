@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/G-Research/unicorn-history-server/internal/database/repository"
+	"github.com/G-Research/unicorn-history-server/internal/yunikorn"
 	"github.com/G-Research/yunikorn-core/pkg/webservice/dao"
 	"github.com/emicklei/go-restful/v3"
 	"github.com/stretchr/testify/assert"
@@ -541,6 +542,53 @@ func TestGetContainersHistory(t *testing.T) {
 			rr := httptest.NewRecorder()
 
 			ws.getContainersHistory(restful.NewRequest(req), restful.NewResponse(rr))
+			require.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
+
+func TestGetCluster(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockClient := yunikorn.NewMockClient(ctrl)
+
+	tests := []struct {
+		name             string
+		expectedClusters []*dao.ClusterDAOInfo
+		expectedStatus   int
+	}{
+		{
+			name: "ClusterInfo exists",
+			expectedClusters: []*dao.ClusterDAOInfo{
+				{
+					StartTime:     time.Now().UnixNano(),
+					ClusterName:   "cluster1",
+					PartitionName: "default",
+				},
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:             "No Cluster found",
+			expectedClusters: nil,
+			expectedStatus:   http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient.EXPECT().
+				GetClusters(gomock.Any()).
+				Return(tt.expectedClusters, nil)
+
+			ws := &WebService{client: mockClient}
+
+			req, err := http.NewRequest(http.MethodGet, "/api/v1/clusters", nil)
+			require.NoError(t, err)
+
+			rr := httptest.NewRecorder()
+
+			ws.getClusters(restful.NewRequest(req), restful.NewResponse(rr))
 			require.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}

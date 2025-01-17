@@ -23,4 +23,5 @@ type Client interface {
 	GetContainersHistory(ctx context.Context) ([]*dao.ContainerHistoryDAOInfo, error)
 	GetEventStream(ctx context.Context) (*http.Response, error)
 	Healthcheck(ctx context.Context) (*dao.SchedulerHealthDAOInfo, error)
+	GetClusters(ctx context.Context) ([]*dao.ClusterDAOInfo, error)
 }

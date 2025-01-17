@@ -22,6 +22,7 @@ const (
 	endpointContainersHistory = "/ws/v1/history/containers"
 	endpointFullStateDump     = "/ws/v1/fullstatedump"
 	endpointHealthcheck       = "/ws/v1/scheduler/healthcheck"
+	endpointClusters          = "/ws/v1/clusters"
 )
 
 // RESTClient implements the Client interface which defines functions to interact with the Yunikorn REST API
@@ -59,6 +60,25 @@ func (c *RESTClient) GetFullStateDump(ctx context.Context) (*webservice.Aggregat
 		return nil, err
 	}
 	return &state, nil
+}
+
+func (c *RESTClient) GetClusters(ctx context.Context) ([]*dao.ClusterDAOInfo, error) {
+	resp, err := c.get(ctx, endpointClusters)
+	if err != nil {
+		return nil, err
+	}
+	defer closeBody(ctx, resp)
+
+	if resp.StatusCode != 200 {
+		return nil, handleNonOKResponse(ctx, resp)
+	}
+
+	var clusters []*dao.ClusterDAOInfo
+	if err = unmarshallBody(ctx, resp, &clusters); err != nil {
+		return nil, err
+	}
+
+	return clusters, nil
 }
 
 func (c *RESTClient) GetPartitions(ctx context.Context) ([]*dao.PartitionInfo, error) {
