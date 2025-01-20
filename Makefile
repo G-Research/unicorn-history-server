@@ -103,7 +103,7 @@ YK_VERSION=18a3c7f
 
 # Add these near the top with other tool versions
 NODE_VERSION ?= 22.13.0
-PNPM_VERSION ?= latest
+PNPM_VERSION ?= 9.15.4
 
 # Add these with other LOCALBIN definitions
 NODE_DIR ?= $(LOCALBIN_TOOLING)/node
@@ -319,14 +319,15 @@ test-k6-performance: ## run k6 performance tests.
 
 .PHONY: web-build
 web-build: node ## build the web components.
+## Cleanup
+	rm -rf ./assets/**
+	rm -rf ./web/node_modules
 ## YHS Web
 	$(NODE_PATH) $(PNPM) --prefix ./web install
 	$(NODE_PATH) $(PNPM) --prefix ./web update yunikorn-web ## ensure that the yunikorn-web package is up to date
-	$(NODE_PATH) uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) \
-	moduleFederationRemoteEntry=$(strip $(call uhs_api_url))/remoteEntry.js \
-	localUhsComponentsWebAddress=$(strip $(call uhs_api_url)) \
+	$(NODE_PATH) production=true \
 	$(NODE_PATH) $(PNPM) --prefix ./web setenv
-	$(NODE_PATH) $(PNPM) --prefix ./web build
+	$(NODE_PATH) $(PNPM) --prefix ./web build:prod
 	echo "UHS Web Build Complete"
 ## Yunikorn Web
 	echo "Removing node modules from yunikorn-web"
@@ -336,10 +337,7 @@ web-build: node ## build the web components.
 	echo "Installing yunikorn-web"
 	$(NODE_PATH) $(PNPM) --prefix ./tmp install
 	echo "Setting environment variables in yunikorn-web"
-	localSchedulerWebAddress=$(strip $(call yunikorn_api_url)) \
-	uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) \
-	moduleFederationRemoteEntry=$(strip $(call uhs_api_url))/remoteEntry.js \
-	localUhsComponentsWebAddress=$(strip $(call uhs_api_url)) \
+	$(NODE_PATH) production=true \
 	$(NODE_PATH) $(PNPM) --prefix ./tmp setenv:prod
 	echo "Building yunikorn-web"
 	$(NODE_PATH) $(PNPM) --prefix ./tmp build:prod
@@ -615,11 +613,9 @@ $(K6): bin/tooling
 node: $(NODE_DIR) ## download and setup node locally if necessary.
 $(NODE_DIR): bin/tooling
 	if [ ! -d $(NODE_DIR) ]; then \
-		mkdir -p $(NODE_DIR) ; \
-	fi ; \
-	NODE_ARCH="$$(if [ "$$(uname -m)" = "x86_64" ]; then echo "x64"; elif [ "$$(uname -m)" = "aarch64" ]; then echo "arm64"; else echo "$$(uname -m)"; fi)" ; \
-	echo "Downloading node $(NODE_VERSION) for $(OS)-$${NODE_ARCH}: https://nodejs.org/dist/v$(subst x,,$(NODE_VERSION))/node-v$(subst x,,$(NODE_VERSION))-$(OS)-$${NODE_ARCH}.tar.gz" ; \
-	curl -fsSL https://nodejs.org/dist/v$(subst x,,$(NODE_VERSION))/node-v$(subst x,,$(NODE_VERSION))-$(OS)-$${NODE_ARCH}.tar.gz | tar -xz --strip-components=1 -C $(NODE_DIR) ; \
-	PATH=$(NODE_DIR)/bin:$$PATH $(NODE_DIR)/bin/corepack enable && \
-	PATH=$(NODE_DIR)/bin:$$PATH $(NODE_DIR)/bin/corepack prepare pnpm@$(PNPM_VERSION) --activate
+		mkdir -p $(NODE_DIR) && \
+		curl -fsSL https://nodejs.org/dist/v$(subst x,,$(NODE_VERSION))/node-v$(subst x,,$(NODE_VERSION))-$(OS)-$(ARCH).tar.gz | tar -xz --strip-components=1 -C $(NODE_DIR) && \
+		$(NODE_DIR)/bin/corepack enable && \
+		$(NODE_DIR)/bin/npm install -g pnpm@9 ; \
+	fi
 

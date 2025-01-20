@@ -20,6 +20,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
 import { EnvConfig } from '@app/models/envconfig.model';
+import { environment } from 'src/environments/environment';
 
 const ENV_CONFIG_JSON_URL = './assets/config/envconfig.json';
 
@@ -56,15 +57,18 @@ export class EnvConfigService {
   }
 
   getYuniKornWebAddress() {
-    if (this.envConfig.yunikornApiURL) {
-      return `${this.envConfig.yunikornApiURL}/ws`;
+    console.log('environment.production', environment.production);
+    if (!environment.production) {
+      return `${this.envConfig.yunikornApiURL}/api`;
     }
 
-    return `${this.uiProtocol}//${this.uiHostname}:${this.uiPort}/ws`;
+    return `${this.uiProtocol}//${this.uiHostname}:${this.uiPort}/api`;
   }
 
   getUHSWebAddress() {
-    if (this.envConfig.uhsApiURL) {
+    console.log('environment.production', environment.production);
+
+    if (!environment.production) {
       return `${this.envConfig.uhsApiURL}/api`;
     }
 

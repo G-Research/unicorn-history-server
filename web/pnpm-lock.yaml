@@ -106,8 +106,8 @@ importers:
         specifier: 5.5.4
         version: 5.5.4
       yunikorn-web:
-        specifier: github:G-Research/yunikorn-web
-        version: https://codeload.github.com/G-Research/yunikorn-web/tar.gz/8628b4f8ee86e55e5c5089da0a7bf04bd86443fd(encoding@0.1.13)
+        specifier: github:G-Research/yunikorn-web#denis-coric/dynamic-env
+        version: https://codeload.github.com/G-Research/yunikorn-web/tar.gz/fe44c12687731a878bd35eb1cca9c36ba36ec73a(encoding@0.1.13)
 
 packages:
 
@@ -4595,8 +4595,8 @@ packages:
     resolution: {integrity: sha512-cYVsTjKl8b+FrnidjibDWskAv7UKOfcwaVZdp/it9n1s9fU3IkgDbhdIRKCW4JDsAlECJY0ytoVPT3sK6kideA==}
     engines: {node: '>=18'}
 
-  yunikorn-web@https://codeload.github.com/G-Research/yunikorn-web/tar.gz/8628b4f8ee86e55e5c5089da0a7bf04bd86443fd:
-    resolution: {tarball: https://codeload.github.com/G-Research/yunikorn-web/tar.gz/8628b4f8ee86e55e5c5089da0a7bf04bd86443fd}
+  yunikorn-web@https://codeload.github.com/G-Research/yunikorn-web/tar.gz/fe44c12687731a878bd35eb1cca9c36ba36ec73a:
+    resolution: {tarball: https://codeload.github.com/G-Research/yunikorn-web/tar.gz/fe44c12687731a878bd35eb1cca9c36ba36ec73a}
     version: 0.0.0
     engines: {node: '22', pnpm: '9'}
 
@@ -9485,7 +9485,7 @@ snapshots:
 
   yoctocolors-cjs@2.1.2: {}
 
-  yunikorn-web@https://codeload.github.com/G-Research/yunikorn-web/tar.gz/8628b4f8ee86e55e5c5089da0a7bf04bd86443fd(encoding@0.1.13):
+  yunikorn-web@https://codeload.github.com/G-Research/yunikorn-web/tar.gz/fe44c12687731a878bd35eb1cca9c36ba36ec73a(encoding@0.1.13):
     dependencies:
       '@angular-architects/module-federation': 18.0.6(@angular/common@18.2.13(@angular/core@18.2.13(rxjs@7.8.1)(zone.js@0.14.10))(rxjs@7.8.1))(@angular/core@18.2.13(rxjs@7.8.1)(zone.js@0.14.10))(encoding@0.1.13)
       '@angular/animations': 18.2.13(@angular/core@18.2.13(rxjs@7.8.1)(zone.js@0.14.10))
