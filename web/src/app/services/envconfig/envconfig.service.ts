@@ -48,34 +48,43 @@ export class EnvConfigService {
   }
 
   loadEnvConfig(): Promise<void> {
+    if (environment.production) {
+      console.log('environment.production', environment.production);
+      return Promise.resolve();
+    }
+
     return new Promise((resolve) => {
-      this.httpClient.get<EnvConfig>(ENV_CONFIG_JSON_URL).subscribe((data) => {
-        this.envConfig = data;
-        resolve();
+      this.httpClient.get<EnvConfig>(ENV_CONFIG_JSON_URL).subscribe({
+        next: (data) => {
+          this.envConfig = data;
+          resolve();
+        },
+        error: () => {
+          console.warn('Failed to load envconfig.json, using default values');
+          resolve();
+        },
       });
     });
   }
 
   getYuniKornWebAddress() {
-    console.log('environment.production', environment.production);
     if (!environment.production) {
       return `${this.envConfig.yunikornApiURL}/api`;
     }
-
     return `${this.uiProtocol}//${this.uiHostname}:${this.uiPort}/api`;
   }
 
   getUHSWebAddress() {
-    console.log('environment.production', environment.production);
-
     if (!environment.production) {
       return `${this.envConfig.uhsApiURL}/api`;
     }
-
     return `${this.uiProtocol}//${this.uiHostname}:${this.uiPort}/api`;
   }
 
   getExternalLogsBaseUrl() {
-    return this.envConfig.externalLogsURL || null;
+    if (!environment.production) {
+      return this.envConfig.externalLogsURL || null;
+    }
+    return null;
   }
 }
