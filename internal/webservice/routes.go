@@ -32,6 +32,7 @@ const (
 	routeAppsHistory              = "/api/v1/history/apps"
 	routeContainersHistory        = "/api/v1/history/containers"
 	routeNodesPerPartition        = "/api/v1/partition/{partition_id}/nodes"
+	routeNodeUtilizations         = "/api/v1/scheduler/node-utilizations"
 	routeSchedulerHealthcheck     = "/api/v1/scheduler/healthcheck"
 	routeEventStatistics          = "/api/v1/event-statistics"
 	routeHealthLiveness           = "/api/v1/health/liveness"
@@ -42,7 +43,15 @@ var startupTime = time.Now()
 
 func (ws *WebService) init(ctx context.Context) {
 	service := new(restful.WebService)
-
+	service.Route(
+		service.GET(routeClusters).
+			To(ws.getClusters).
+			Produces(restful.MIME_JSON).
+			Writes([]*dao.ClusterDAOInfo{}).
+			Returns(200, "OK", []*dao.ClusterDAOInfo{}).
+			Returns(500, "Internal Server Error", ProblemDetails{}).
+			Doc("Get cluster information"),
+	)
 	service.Route(
 		service.GET(routePartitions).
 			To(ws.getPartitions).
@@ -173,13 +182,22 @@ func (ws *WebService) init(ctx context.Context) {
 			Doc("Get event statistics"),
 	)
 	service.Route(
-		service.GET(routeSchedulerHealthcheck).
-			To(ws.LivenessHealthcheck).
+		service.GET(routeNodeUtilizations).
+			To(ws.getNodeUtilizations).
 			Produces(restful.MIME_JSON).
-			Writes(health.LivenessStatus{}).
-			Returns(200, "OK", health.LivenessStatus{}).
+			Writes([]*dao.PartitionNodesUtilDAOInfo{}).
+			Returns(200, "OK", []*dao.PartitionNodesUtilDAOInfo{}).
 			Returns(500, "Internal Server Error", ProblemDetails{}).
-			Doc("Scheduler liveness healthcheck"),
+			Doc("Get node utilization information"),
+	)
+	service.Route(
+		service.GET(routeSchedulerHealthcheck).
+			To(ws.schedulerHealthcheck).
+			Produces(restful.MIME_JSON).
+			Writes(dao.SchedulerHealthDAOInfo{}).
+			Returns(200, "OK", dao.SchedulerHealthDAOInfo{}).
+			Returns(500, "Internal Server Error", ProblemDetails{}).
+			Doc("Scheduler healthcheck"),
 	)
 	service.Route(
 		service.GET(routeHealthLiveness).
@@ -387,6 +405,21 @@ func (ws *WebService) getNodesPerPartition(req *restful.Request, resp *restful.R
 	jsonResponse(resp, nodes)
 }
 
+func (ws *WebService) getClusters(req *restful.Request, resp *restful.Response) {
+	// mirror of yunikorn-core ws/v1/clusters
+	ctx := req.Request.Context()
+	clusters, err := ws.client.GetClusters(ctx)
+	if err != nil {
+		errorResponse(req, resp, err)
+		return
+	}
+	if clusters == nil {
+		notFoundResponse(req, resp, fmt.Errorf("no cluster found"))
+		return
+	}
+	jsonResponse(resp, clusters)
+}
+
 func (ws *WebService) getAppsHistory(req *restful.Request, resp *restful.Response) {
 	ctx := req.Request.Context()
 	filters, err := parseHistoryFilters(req.Request)
@@ -434,6 +467,36 @@ func (ws *WebService) getEventStatistics(req *restful.Request, resp *restful.Res
 		return
 	}
 	jsonResponse(resp, counts)
+}
+
+func (ws *WebService) getNodeUtilizations(req *restful.Request, resp *restful.Response) {
+	// mirror of yunikorn-core ws/v1/scheduler/node-utilizations
+	ctx := req.Request.Context()
+	nu, err := ws.client.NodeUtilizations(ctx)
+	if err != nil {
+		errorResponse(req, resp, err)
+		return
+	}
+	if nu == nil {
+		notFoundResponse(req, resp, fmt.Errorf("no node utilizations data found"))
+		return
+	}
+	jsonResponse(resp, nu)
+}
+
+func (ws *WebService) schedulerHealthcheck(req *restful.Request, resp *restful.Response) {
+	// mirror of yunikorn-core ws/v1/scheduler/healthcheck
+	ctx := req.Request.Context()
+	healthCheck, err := ws.client.Healthcheck(ctx)
+	if err != nil {
+		errorResponse(req, resp, err)
+		return
+	}
+	if healthCheck == nil {
+		notFoundResponse(req, resp, fmt.Errorf("no healthcheck data found"))
+		return
+	}
+	jsonResponse(resp, healthCheck)
 }
 
 func (ws *WebService) LivenessHealthcheck(req *restful.Request, resp *restful.Response) {

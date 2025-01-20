@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/G-Research/unicorn-history-server/internal/database/repository"
+	"github.com/G-Research/unicorn-history-server/internal/yunikorn"
 	"github.com/G-Research/yunikorn-core/pkg/webservice/dao"
 	"github.com/emicklei/go-restful/v3"
 	"github.com/stretchr/testify/assert"
@@ -541,6 +542,177 @@ func TestGetContainersHistory(t *testing.T) {
 			rr := httptest.NewRecorder()
 
 			ws.getContainersHistory(restful.NewRequest(req), restful.NewResponse(rr))
+			require.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
+
+func TestGetCluster(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockClient := yunikorn.NewMockClient(ctrl)
+
+	tests := []struct {
+		name             string
+		expectedClusters []*dao.ClusterDAOInfo
+		expectedStatus   int
+	}{
+		{
+			name: "ClusterInfo exists",
+			expectedClusters: []*dao.ClusterDAOInfo{
+				{
+					StartTime:     time.Now().UnixNano(),
+					ClusterName:   "cluster1",
+					PartitionName: "default",
+				},
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:             "No Cluster found",
+			expectedClusters: nil,
+			expectedStatus:   http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient.EXPECT().
+				GetClusters(gomock.Any()).
+				Return(tt.expectedClusters, nil)
+
+			ws := &WebService{client: mockClient}
+
+			req, err := http.NewRequest(http.MethodGet, "/api/v1/clusters", nil)
+			require.NoError(t, err)
+
+			rr := httptest.NewRecorder()
+
+			ws.getClusters(restful.NewRequest(req), restful.NewResponse(rr))
+			require.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
+
+func TestSchedulerHealthcheck(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockClient := yunikorn.NewMockClient(ctrl)
+
+	tests := []struct {
+		name           string
+		expected       *dao.SchedulerHealthDAOInfo
+		expectedStatus int
+	}{
+		{
+			name: "SchedulerHealthDAOInfo exists",
+			expected: &dao.SchedulerHealthDAOInfo{
+				Healthy: true,
+				HealthChecks: []dao.HealthCheckInfo{
+					{
+						Name:             "Scheduling errors",
+						Succeeded:        true,
+						Description:      "Check for scheduling error entries in metrics",
+						DiagnosisMessage: "There were 0 scheduling errors logged in the metrics",
+					},
+					{
+						Name:             "Failed nodes",
+						Succeeded:        true,
+						Description:      "Check for failed nodes entries in metrics",
+						DiagnosisMessage: "There were 0 failed nodes logged in the metrics",
+					},
+				},
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "No SchedulerHealthDAOInfo found",
+			expected:       nil,
+			expectedStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient.EXPECT().
+				Healthcheck(gomock.Any()).
+				Return(tt.expected, nil)
+
+			ws := &WebService{client: mockClient}
+
+			req, err := http.NewRequest(http.MethodGet, "/api/v1/scheduler/healthcheck", nil)
+			require.NoError(t, err)
+
+			rr := httptest.NewRecorder()
+
+			ws.schedulerHealthcheck(restful.NewRequest(req), restful.NewResponse(rr))
+			require.Equal(t, tt.expectedStatus, rr.Code)
+		})
+	}
+}
+
+func TestNodeUtilizations(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockClient := yunikorn.NewMockClient(ctrl)
+
+	tests := []struct {
+		name           string
+		expected       []*dao.PartitionNodesUtilDAOInfo
+		expectedStatus int
+	}{
+		{
+			name: "NodeUtilizations exist",
+			expected: []*dao.PartitionNodesUtilDAOInfo{
+				{
+					ClusterID: "mycluster",
+					Partition: "default",
+					NodesUtilList: []*dao.NodesUtilDAOInfo{
+						{
+							ResourceType: "memory",
+							NodesUtil: []*dao.NodeUtilDAOInfo{
+								{
+									BucketName: "0-10%",
+									NumOfNodes: 1,
+									NodeNames:  []string{"uhs-control-plane"},
+								},
+								{BucketName: "10-20%"},
+								{BucketName: "20-30%"},
+								{BucketName: "30-40%"},
+								{BucketName: "40-50%"},
+								{BucketName: "50-60%"},
+								{BucketName: "60-70%"},
+								{BucketName: "70-80%"},
+								{BucketName: "80-90%"},
+								{BucketName: "90-100%"},
+							},
+						},
+					},
+				},
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "No NodeUtilizations found",
+			expected:       nil,
+			expectedStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient.EXPECT().
+				NodeUtilizations(gomock.Any()).
+				Return(tt.expected, nil)
+
+			ws := &WebService{client: mockClient}
+
+			req, err := http.NewRequest(http.MethodGet, "/api/v1/scheduler/node-utilizations", nil)
+			require.NoError(t, err)
+
+			rr := httptest.NewRecorder()
+
+			ws.getNodeUtilizations(restful.NewRequest(req), restful.NewResponse(rr))
 			require.Equal(t, tt.expectedStatus, rr.Code)
 		})
 	}
