@@ -613,9 +613,11 @@ $(K6): bin/tooling
 node: $(NODE_DIR) ## download and setup node locally if necessary.
 $(NODE_DIR): bin/tooling
 	if [ ! -d $(NODE_DIR) ]; then \
-		mkdir -p $(NODE_DIR) && \
-		curl -fsSL https://nodejs.org/dist/v$(subst x,,$(NODE_VERSION))/node-v$(subst x,,$(NODE_VERSION))-$(OS)-$(ARCH).tar.gz | tar -xz --strip-components=1 -C $(NODE_DIR) && \
-		$(NODE_DIR)/bin/corepack enable && \
-		$(NODE_DIR)/bin/npm install -g pnpm@9 ; \
-	fi
+		mkdir -p $(NODE_DIR) ; \
+	fi ; \
+	NODE_ARCH="$$(if [ "$$(uname -m)" = "x86_64" ]; then echo "x64"; elif [ "$$(uname -m)" = "aarch64" ]; then echo "arm64"; else echo "$$(uname -m)"; fi)" ; \
+	echo "Downloading node $(NODE_VERSION) for $(OS)-$${NODE_ARCH}: https://nodejs.org/dist/v$(subst x,,$(NODE_VERSION))/node-v$(subst x,,$(NODE_VERSION))-$(OS)-$${NODE_ARCH}.tar.gz" ; \
+	curl -fsSL https://nodejs.org/dist/v$(subst x,,$(NODE_VERSION))/node-v$(subst x,,$(NODE_VERSION))-$(OS)-$${NODE_ARCH}.tar.gz | tar -xz --strip-components=1 -C $(NODE_DIR) ; \
+	PATH=$(NODE_DIR)/bin:$$PATH $(NODE_DIR)/bin/corepack enable && \
+	PATH=$(NODE_DIR)/bin:$$PATH $(NODE_DIR)/bin/corepack prepare pnpm@$(PNPM_VERSION) --activate
 
