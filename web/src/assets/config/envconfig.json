@@ -1,6 +1,6 @@
 {
-  "localUhsComponentsWebAddress": "http://127.0.0.1:8989",
+  "localUhsComponentsWebAddress": "http://localhost:8989",
   "externalLogsURL": "https://logs.example.com?token=abc123&applicationId=",
-  "yunikornApiURL": "http://127.0.0.1:30001",
-  "uhsApiURL": "http://127.0.0.1:8989"
+  "yunikornApiURL": "http://localhost:30001",
+  "uhsApiURL": "http://localhost:8989"
 }
