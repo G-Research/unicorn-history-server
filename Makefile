@@ -103,7 +103,7 @@ YK_VERSION=18a3c7f
 
 # Add these near the top with other tool versions
 NODE_VERSION ?= 22.13.0
-PNPM_VERSION ?= latest
+PNPM_VERSION ?= 9.15.4
 
 # Add these with other LOCALBIN definitions
 NODE_DIR ?= $(LOCALBIN_TOOLING)/node
@@ -319,14 +319,15 @@ test-k6-performance: ## run k6 performance tests.
 
 .PHONY: web-build
 web-build: node ## build the web components.
+## Cleanup
+	rm -rf ./assets/**
+	rm -rf ./web/node_modules
 ## YHS Web
 	$(NODE_PATH) $(PNPM) --prefix ./web install
 	$(NODE_PATH) $(PNPM) --prefix ./web update yunikorn-web ## ensure that the yunikorn-web package is up to date
-	$(NODE_PATH) uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) \
-	moduleFederationRemoteEntry=$(strip $(call uhs_api_url))/remoteEntry.js \
-	localUhsComponentsWebAddress=$(strip $(call uhs_api_url)) \
+	$(NODE_PATH) production=true \
 	$(NODE_PATH) $(PNPM) --prefix ./web setenv
-	$(NODE_PATH) $(PNPM) --prefix ./web build
+	$(NODE_PATH) $(PNPM) --prefix ./web build:prod
 	echo "UHS Web Build Complete"
 ## Yunikorn Web
 	echo "Removing node modules from yunikorn-web"
@@ -336,10 +337,7 @@ web-build: node ## build the web components.
 	echo "Installing yunikorn-web"
 	$(NODE_PATH) $(PNPM) --prefix ./tmp install
 	echo "Setting environment variables in yunikorn-web"
-	localSchedulerWebAddress=$(strip $(call yunikorn_api_url)) \
-	uhsApiURL=$(strip $(call uhs_api_url)) yunikornApiURL=$(strip $(call yunikorn_api_url)) \
-	moduleFederationRemoteEntry=$(strip $(call uhs_api_url))/remoteEntry.js \
-	localUhsComponentsWebAddress=$(strip $(call uhs_api_url)) \
+	$(NODE_PATH) production=true \
 	$(NODE_PATH) $(PNPM) --prefix ./tmp setenv:prod
 	echo "Building yunikorn-web"
 	$(NODE_PATH) $(PNPM) --prefix ./tmp build:prod
