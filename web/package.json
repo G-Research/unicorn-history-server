@@ -51,7 +51,7 @@
     "ngx-build-plus": "^18.0.0",
     "prettier": "^3.3.3",
     "typescript": "5.5.4",
-    "yunikorn-web": "github:G-Research/yunikorn-web#denis-coric/dynamic-env"
+    "yunikorn-web": "github:G-Research/yunikorn-web"
   },
   "engines": {
     "pnpm": "9",
