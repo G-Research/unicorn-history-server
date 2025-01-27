@@ -400,7 +400,7 @@ endif
 
 .PHONY: docker-build
 docker-build: OS=linux
-docker-build: bin/docker clean build web-build ## build docker image using buildx.
+docker-build: bin/docker clean build ## build docker image using buildx.
 	echo "Building docker image for linux/$(ARCH)"
 	docker buildx build    				     			 \
 		--file build/unicorn-history-server/Dockerfile   \
@@ -525,7 +525,7 @@ patch-yunikorn-service: ## patch yunikorn service to expose it as NodePort (yuni
 ##@ Build Dependencies
 
 .PHONY: install-tools
-install-tools: golangci-lint gotestsum $(CLUSTER_MGR) helm yq node ## install development tools.
+install-tools: golangci-lint gotestsum $(CLUSTER_MGR) helm yq ## install development tools.
 
 GOTESTSUM ?= $(LOCALBIN_TOOLING)/gotestsum
 GOTESTSUM_VERSION ?= v1.11.0
