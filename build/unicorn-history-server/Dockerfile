@@ -11,22 +11,17 @@ RUN npm install -g pnpm            && \
     pnpm install                   && \
     pnpm run build:prod
 
-FROM node:${NODE_VERSION} AS yunikorn-web
+# Install yunikorn-web
+RUN git clone https://github.com/G-Research/yunikorn-web.git /build/src/yunikorn-web
 
-COPY --from=uhs-web /build/src/node_modules/yunikorn-web /build/src
-RUN rm -rf /build/src/yunikorn-web/node_modules
-
-WORKDIR /build/src
-
-RUN npm install -g pnpm            && \
-    pnpm install                   && \
+RUN cd /build/src/yunikorn-web && \
+    pnpm install && \
     pnpm run build:prod
-
 
 FROM alpine:${ALPINE_VERSION}
 
 COPY --from=uhs-web /build/assets /app/assets
-COPY --from=yunikorn-web /build/src/dist/yunikorn-web /app/assets
+COPY --from=uhs-web /build/src/yunikorn-web/dist/yunikorn-web /app/assets
 COPY bin/app/unicorn-history-server /app/unicorn-history-server
 COPY migrations /app/migrations
 COPY config/unicorn-history-server/config.yml /app/config.yml
