@@ -11,7 +11,7 @@ RUN npm install -g pnpm            && \
     pnpm install                   && \
     pnpm run build:prod
 
-# Install yunikorn-web
+# Build yunikorn-web
 RUN git clone https://github.com/G-Research/yunikorn-web.git /build/src/yunikorn-web
 
 RUN cd /build/src/yunikorn-web && \
