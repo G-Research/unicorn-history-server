@@ -16,7 +16,7 @@ jobs:
       # We need to checkout the repo in order to determine the latest tag.
       - name: Checkout
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-tags: 1
 
@@ -43,13 +43,13 @@ jobs:
           echo "tags=${tags[@]}" >> $GITHUB_OUTPUT
 
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: unicorn-history-server-oci-images-*
           merge-multiple: true
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -76,7 +76,7 @@ jobs:
     name: Invoke Chart push
     needs: docker-release
     if: startsWith(github.ref, 'refs/tags/v')
-    uses: G-Research/charts/.github/workflows/invoke-push.yaml@master
+    uses: G-Research/charts/.github/workflows/invoke-push.yaml@da1730170639264eb7d32931bac437820c406951 # master
     secrets:
       APP_ID: ${{ secrets.APP_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
