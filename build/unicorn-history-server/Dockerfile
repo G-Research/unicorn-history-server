@@ -7,7 +7,7 @@ COPY web /build/src
 
 WORKDIR /build/src
 
-RUN npm install -g pnpm            && \
+RUN npm install -g pnpm@9          && \
     pnpm install                   && \
     pnpm run build:prod
 
